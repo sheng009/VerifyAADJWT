@@ -27,20 +27,28 @@ import java.util.*;
 
 public class JwtService {
 
+    // Manage the cache of JsonWebKey.
     private KeyCacheManager keyCacheManager;
-
-    private KeyWithTTL keyWithTTL;
-
-    private AADJWTModel aadjwtModel;
 
     private JwtClaims jwtClaims;
 
+    // Skip the default audience validation.
     private Boolean skipDefaultAudienceValidation = false;
 
-    private Boolean requirSubject = false;
+    // Ensure there is a "sub" claim in the JWT.
+    private Boolean requireSubject = false;
 
+    // Ensure there is a "jti" claim in the JWT.
     private Boolean requireJwtId = false;
 
+    /**
+     * Get JSON Web Key Set.
+     *
+     * @param clientID
+     * @param tenantID
+     * @param jwksUrl
+     * @return
+     */
     public List<JsonWebKey> GetSigningKeys(String clientID, String tenantID, String jwksUrl) {
         List<JsonWebKey> keys = null;
         HttpsJwks httpsJkws = new HttpsJwks(jwksUrl);
@@ -63,22 +71,36 @@ public class JwtService {
         return keys;
     }
 
+    /**
+     * Get JwtConsumerBuilder instance without validating "exp", "iat" and "nbf".
+     *
+     * @return
+     */
     private JwtConsumerBuilder GetJwtConsumerBuilder() {
         JwtConsumerBuilder customJwtConsumerBuilder = new JwtConsumerBuilder()
                 .setSkipAllDefaultValidators();
         if (!skipDefaultAudienceValidation) {
-            //Set<String> setAud = Collections.emptySet();
             Set<String> setAud = new HashSet<String>();
-            setAud.add("api://faa0afb8-bfe5-4648-82e9-c6f3b909fcf4");
+            setAud.add(CommonConstraint.EXPECTED_AUDIENCE);
             customJwtConsumerBuilder = customJwtConsumerBuilder.registerValidator(new AudValidator(setAud, false));
         }
         customJwtConsumerBuilder = customJwtConsumerBuilder.registerValidator(new IssValidator(null, false))
-                .registerValidator(new SubValidator(requirSubject))
+                .registerValidator(new SubValidator(requireSubject))
                 .registerValidator(new JtiValidator(requireJwtId));
 
         return customJwtConsumerBuilder;
     }
 
+    /**
+     * Verify JWT token without validating "exp", "iat" and "nbf".
+     * Then we can use JwtService.ValidateJWTExpirationTime to validate JWT expiration time.
+     *
+     * @param token
+     * @param tenantID
+     * @param jsonWebKeys
+     * @return
+     * @throws MalformedClaimException
+     */
     public Boolean Verify(String token, String tenantID, List<JsonWebKey> jsonWebKeys) throws MalformedClaimException {
         Boolean isValid = false;
         JwksVerificationKeyResolver keyResolver = new JwksVerificationKeyResolver(jsonWebKeys);
@@ -114,10 +136,10 @@ public class JwtService {
     }
 
     /**
-     * get jwks_uri from OpenID Connect metadata document
+     * Get "jwks_uri" from OpenID Connect metadata document.
      *
      * @param stsDiscoveryEndpoint
-     * @return jwks_uri
+     * @return the property name of jwks url in the OpenID Connect metadata document
      */
     public String GetJWKS(String stsDiscoveryEndpoint, String jwksUrlKey) {
         HttpClient client = new HttpClient();
@@ -142,8 +164,9 @@ public class JwtService {
 
 
     /**
-     * Validate JWT Expiration Time
-     * @param expirationTime Original expiration time
+     * Validate JWT expiration time.
+     *
+     * @param expirationTime   Original expiration time
      * @param extraValidityDay Extended validity period
      * @return Boolean
      */
@@ -164,12 +187,13 @@ public class JwtService {
 
 
     /**
-     * Get a claim from the JWT
+     * Get a claim from the JWT.
+     *
      * @param claimType
      * @return
      * @throws MalformedClaimException
      */
-    public Long GetClaim(String claimType) throws MalformedClaimException {
-        return jwtClaims.getClaimValue(claimType, Long.class);
+    public <T> T GetClaim(String claimType, Class<T> type) throws MalformedClaimException {
+        return jwtClaims.getClaimValue(claimType, type);
     }
 }

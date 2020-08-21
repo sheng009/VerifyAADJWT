@@ -2,8 +2,10 @@ package com.chinasofti.Jwt.entity;
 
 public class AADJWTModel {
 
+    // access token
     private String token;
     private String tenantId;
+    // the Azure AD application client ID of ReactNative app
     private String clientId;
 
     @Override
@@ -43,14 +45,18 @@ public class AADJWTModel {
         this.token = token;
     }
 
-    public String estimate(){
-        if(token ==null || token==""){
+    /**
+     * Check the properties
+     * @return
+     */
+    public String estimate() {
+        if (token == null || token == "") {
             return "Please ensure the token is valid.";
         }
-        if (tenantId == null || tenantId==""){
+        if (tenantId == null || tenantId == "") {
             return "Please ensure the tenanId is valid.";
         }
-        if (clientId == null || tenantId==""){
+        if (clientId == null || tenantId == "") {
             return "Please ensure the clientId is valid.";
         }
 

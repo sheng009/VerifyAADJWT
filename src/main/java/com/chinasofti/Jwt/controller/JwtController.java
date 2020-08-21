@@ -30,8 +30,8 @@ public class JwtController {
             result.message = estimate;
             return result;
         }
-        String jwks_uri = jwtService.GetJWKS(CommonConstraint.STS_DISCOVERY_ENDPOINT.replace("{tenantId}", aadjwtModel.getTenantId()), "jwks_uri");
-        List<JsonWebKey> signingKeys = jwtService.GetSigningKeys(aadjwtModel.getClientId(), aadjwtModel.getTenantId(), jwks_uri);
+        String jwksUri = jwtService.GetJWKS(CommonConstraint.STS_DISCOVERY_ENDPOINT.replace("{tenantId}", aadjwtModel.getTenantId()), "jwks_uri");
+        List<JsonWebKey> signingKeys = jwtService.GetSigningKeys(aadjwtModel.getClientId(), aadjwtModel.getTenantId(), jwksUri);
         if (signingKeys == null) {
             result.status = false;
             result.message = "Token validation failed. You can try it again later.";
@@ -43,7 +43,7 @@ public class JwtController {
             result.message = "Token is not vaild";
             result.status = isValidity;
         } else {
-            if (!jwtService.ValidateJWTExpirationTime(jwtService.GetClaim("exp"), 1)) {
+            if (!jwtService.ValidateJWTExpirationTime(jwtService.GetClaim("exp", Long.class), 1)) {
                 result.message = "Token is expired";
                 result.status = false;
             } else {

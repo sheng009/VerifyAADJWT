@@ -2,24 +2,28 @@ package com.chinasofti.Jwt.entity;
 
 import org.jose4j.jwk.JsonWebKey;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
+/**
+ * Manage the cache of Json Web Keys.
+ */
 public class KeyCacheManager {
 
     /**
-     * 用户信息缓存
+     * Store JsonWebKey in this HashMap.
      */
     private static HashMap<String, KeyWithTTL> keyList = new HashMap<>();
 
     /**
-     * 保存时间
+     * The live time for JsonWebKey.
      */
-    private static int liveTime = 60;
+    private static int liveMinutes = 20;
 
     /**
-     * 添加用户信息缓存
+     * Add the JsonWebKey cache
      *
      * @param cacheKeyName
      * @param jsonWebKeys
@@ -28,7 +32,11 @@ public class KeyCacheManager {
     public static boolean addCache(String cacheKeyName, List<JsonWebKey> jsonWebKeys) {
         KeyWithTTL keyWithTTL = new KeyWithTTL();
         keyWithTTL.setKeys(jsonWebKeys);
-        keyWithTTL.setExpirationDate(new Date());
+        // prepare the cache item expiration time
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(new Date());
+        calendar.add(Calendar.MINUTE, liveMinutes);
+        keyWithTTL.setExpirationDate(calendar.getTime());
         keyList.put(cacheKeyName, keyWithTTL);
         return true;
     }
@@ -59,12 +67,12 @@ public class KeyCacheManager {
      * Clear expired JsonWebKey cache information
      */
     public static void clearData() {
-        for (String key : keyList.keySet()) {
+        HashMap<String, KeyWithTTL> keyListCopy = (HashMap<String, KeyWithTTL>) keyList.clone();
+        for (String key : keyListCopy.keySet()) {
             KeyWithTTL jsonWebKey = keyList.get(key);
             if (jsonWebKey.getExpirationDate() == null || new Date().after(jsonWebKey.getExpirationDate())) {
                 keyList.remove(key);
             }
         }
     }
-
 }
